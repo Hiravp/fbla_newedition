@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:fbla_member_app/screens/home_screen.dart';
-import 'package:fbla_member_app/screens/calendar_screen.dart';
-import 'package:fbla_member_app/screens/resources_screen.dart';
-import 'package:fbla_member_app/screens/news_screen.dart';
-import 'package:fbla_member_app/screens/profile_screen.dart';
+
+// FIXED IMPORTS — match your folder structure
+import 'screens/home/home_screen.dart';
+import 'screens/calendar/calendar_screen.dart';
+import 'screens/resources/resources_screen.dart';
+import 'screens/news/news_screen.dart';
+import 'screens/profile/profile_screen.dart';
 
 void main() {
   runApp(const FBLAApp());
@@ -19,6 +21,7 @@ class FBLAApp extends StatefulWidget {
 class _FBLAAppState extends State<FBLAApp> {
   int _selectedIndex = 0;
 
+  // FIXED — screens now match the corrected imports
   final _screens = const [
     HomeScreen(),
     CalendarScreen(),
@@ -34,7 +37,6 @@ class _FBLAAppState extends State<FBLAApp> {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0052CC)),
         useMaterial3: true,
-        fontFamily: 'YourFigmaFontName', // match Figma
       ),
       home: Scaffold(
         body: _screens[_selectedIndex],
