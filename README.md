@@ -1,16 +1,45 @@
-# fbla_newedition
+FBLA Member Engagement App
+A cross‑platform Flutter application built for the 2025–2026 FBLA Mobile Application Development competition. This project provides an all‑in‑one platform for FBLA members to stay informed, organized, and engaged with their chapter, state, and national activities.
 
-A new Flutter project.
+Overview
+The FBLA Member Engagement App is designed to function as a complete member hub. It includes:
 
-## Getting Started
+Home dashboard with quick navigation
 
-This project is a starting point for a Flutter application.
+Event calendar with conferences, competitions, and chapter activities
 
-A few resources to get you started if this is your first Flutter project:
+News feed with updates and announcements
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Resource library with FBLA documents and guidelines
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Member profile with achievements and chapter information
+
+Social media integration
+
+AI assistant for questions, study help, and quizzes
+
+Optional gamification features
+
+The app runs on iOS, Android, Web, Windows, macOS, and Linux using a single Flutter codebase.
+
+Features
+Home Dashboard
+Centralized access to events, news, resources, and profile information.
+
+Event Calendar
+Displays upcoming conferences, competitions, meetings, and chapter events.
+
+Resources Library
+Provides access to FBLA documents, competitive event guidelines, templates, and training materials.
+
+News Feed
+Shows announcements from national, state, and chapter levels.
+
+Member Profile
+Includes user information, chapter details, achievements, and badges.
+
+AI Assistant
+A built‑in assistant capable of answering FBLA questions, providing study help, and running quizzes.
+
+Games (Optional)
+Includes trivia, leadership quizzes, and competition preparation activities.
