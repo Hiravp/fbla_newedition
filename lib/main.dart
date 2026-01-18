@@ -1,58 +1,101 @@
-import 'package:flutter/material.dart';
+import "package:flutter/material.dart";
+import "theme/app_theme.dart";
+import "services/auth_service.dart";
+import "screens/login/login_screen.dart";
+import "screens/home/home_screen.dart";
+import "screens/calendar/calendar_screen.dart";
+import "screens/resources/resources_screen.dart";
+import "screens/news/news_screen.dart";
+import "screens/profile/profile_screen.dart";
+import "screens/ai/ai_screen.dart";
+import "screens/social/social_screen.dart";
 
-// FIXED IMPORTS — match your folder structure
-import 'screens/home/home_screen.dart';
-import 'screens/calendar/calendar_screen.dart';
-import 'screens/resources/resources_screen.dart';
-import 'screens/news/news_screen.dart';
-import 'screens/profile/profile_screen.dart';
+late AuthService _authService;
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  _authService = AuthService();
+  await _authService.init();
   runApp(const FBLAApp());
 }
 
-class FBLAApp extends StatefulWidget {
+class FBLAApp extends StatelessWidget {
   const FBLAApp({super.key});
 
   @override
-  State<FBLAApp> createState() => _FBLAAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "FBLA Member Engagement",
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      home: _authService.isLoggedIn ? const MainApp() : const LoginScreen(),
+      routes: {
+        "/home": (_) => const MainApp(),
+        "/login": (_) => const LoginScreen(),
+      },
+    );
+  }
 }
 
-class _FBLAAppState extends State<FBLAApp> {
+class MainApp extends StatefulWidget {
+  const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
 
-  // FIXED — screens now match the corrected imports
   final _screens = const [
     HomeScreen(),
+    AiScreen(),
     CalendarScreen(),
-    ResourcesScreen(),
     NewsScreen(),
+    SocialScreen(),
+    ResourcesScreen(),
     ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FBLA Member App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0052CC)),
-        useMaterial3: true,
-      ),
-      home: Scaffold(
-        body: _screens[_selectedIndex],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) {
-            setState(() => _selectedIndex = index);
-          },
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.event), label: 'Calendar'),
-            NavigationDestination(icon: Icon(Icons.menu_book), label: 'Resources'),
-            NavigationDestination(icon: Icon(Icons.campaign), label: 'News'),
-            NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
-          ],
-        ),
+    return Scaffold(
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.smart_toy),
+            label: "AI",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.event),
+            label: "Calendar",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.newspaper),
+            label: "News",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people),
+            label: "Social",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.library_books),
+            label: "Resources",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person),
+            label: "Profile",
+          ),
+        ],
       ),
     );
   }
