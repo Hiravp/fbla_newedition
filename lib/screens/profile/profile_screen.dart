@@ -33,7 +33,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final user = _authService.currentUser;
+      if (user != null) {
+        // Update user object with new values
+        final updatedUser = user.copyWith(
+          name: _nameController.text,
+          bio: _bioController.text,
+        );
+        // Save to auth service (which syncs to Supabase if available)
+        await _authService.updateProfile(updatedUser);
+      }
+    } catch (e) {
+      print('Error saving profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving profile: $e')),
+        );
+      }
+      setState(() => _isSaving = false);
+      return;
+    }
+    
     setState(() {
       _isSaving = false;
       _isEditing = false;
@@ -60,14 +81,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Logged out successfully'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              // Actually logout
+              await _authService.logout();
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed('/login');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Logged out successfully'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             child: const Text('Logout'),
           ),
