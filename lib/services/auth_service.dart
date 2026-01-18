@@ -81,7 +81,7 @@ class AuthService {
     try {
       // Try real Supabase first
       try {
-        final response = await _supabase.auth.signUpWithPassword(
+        final response = await _supabase.auth.signUp(
           email: email,
           password: password,
         );
