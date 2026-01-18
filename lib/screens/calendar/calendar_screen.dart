@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../models/event.dart';
 import '../../services/data_service.dart';
 import '../../theme/app_theme.dart';
@@ -11,7 +13,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  final DataService _dataService = DataService();
+  late final DataService _dataService;
   late Future<List<Event>> _eventsFuture;
   String _selectedCategory = 'All';
   final List<String> _categories = ['All', 'Meeting', 'Workshop', 'Competition', 'Other'];
@@ -19,7 +21,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _eventsFuture = _dataService.getEvents();
+    _dataService = DataService(Supabase.instance.client);
+    _loadEvents();
+  }
+
+  void _loadEvents() {
+    _eventsFuture = _dataService.getUpcomingEvents();
   }
 
   List<Event> _filterEventsByCategory(List<Event> events) {

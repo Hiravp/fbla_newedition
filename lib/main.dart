@@ -1,6 +1,8 @@
 import "package:flutter/material.dart";
+import "package:supabase_flutter/supabase_flutter.dart";
 import "theme/app_theme.dart";
 import "services/auth_service.dart";
+import "services/data_service.dart";
 import "screens/login/login_screen.dart";
 import "screens/home/home_screen.dart";
 import "screens/calendar/calendar_screen.dart";
@@ -11,11 +13,21 @@ import "screens/ai/ai_screen.dart";
 import "screens/social/social_screen.dart";
 
 late AuthService _authService;
+late DataService _dataService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://dsiyyucdnlmangtbjrsi.supabase.co',
+    anonKey: 'sb_publishable_a7HGhZQlo2UV-k4zfPVxvg_2cS52ina',
+  );
+  
   _authService = AuthService();
   await _authService.init();
+  _dataService = DataService(Supabase.instance.client);
+  
   runApp(const FBLAApp());
 }
 

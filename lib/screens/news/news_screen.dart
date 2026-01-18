@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/data_service.dart';
 import '../../models/news.dart';
 import '../../theme/app_theme.dart';
@@ -12,7 +13,7 @@ class NewsScreen extends StatefulWidget {
 }
 
 class _NewsScreenState extends State<NewsScreen> {
-  late final DataService _dataService = DataService();
+  late final DataService _dataService;
   late Future<List<News>> _newsFuture;
   String _selectedCategory = 'All';
   final List<String> _categories = ['All', 'Events', 'Resources', 'Member Stories'];
@@ -20,6 +21,7 @@ class _NewsScreenState extends State<NewsScreen> {
   @override
   void initState() {
     super.initState();
+    _dataService = DataService(Supabase.instance.client);
     _newsFuture = _dataService.getNews();
   }
 

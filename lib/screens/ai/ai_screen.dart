@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/gemini_service.dart';
+import '../../services/ai_service.dart';
 import '../../models/chat_message.dart';
 import '../../theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
@@ -12,7 +12,7 @@ class AiScreen extends StatefulWidget {
 }
 
 class _AiScreenState extends State<AiScreen> {
-  late final GeminiService _geminiService;
+  late final AiService _aiService;
   final _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
@@ -24,7 +24,7 @@ class _AiScreenState extends State<AiScreen> {
   @override
   void initState() {
     super.initState();
-    _geminiService = GeminiService();
+    _aiService = AiService();
     _addWelcomeMessage();
   }
 
@@ -61,7 +61,7 @@ class _AiScreenState extends State<AiScreen> {
     _scrollToBottom();
 
     try {
-      final response = await _geminiService.answerFBLAQuestion(text);
+      final response = await _aiService.chat(text);
       final botMsg = ChatMessage(
         id: _uuid.v4(),
         content: response,
