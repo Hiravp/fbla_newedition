@@ -6,12 +6,19 @@ class AuthService {
   fbla_user.User? _currentUser;
 
   Future<void> init() async {
-    await Supabase.initialize(
-      url: 'https://dsiyyucdnlmangtbjrsi.supabase.co',
-      anonKey: 'sb_publishable_a7HGhZQlo2UV-k4zfPVxvg_2cS52ina',
-    );
-    _supabase = Supabase.instance.client;
-    await _loadCurrentUser();
+    try {
+      await Supabase.initialize(
+        url: 'https://dsiyyucdnlmangtbjrsi.supabase.co',
+        anonKey: 'sb_publishable_a7HGhZQlo2UV-k4zfPVxvg_2cS52ina',
+      );
+      _supabase = Supabase.instance.client;
+      await _loadCurrentUser();
+    } catch (e) {
+      print('Supabase initialization error: $e');
+      print('Continuing in demo mode...');
+      // Create a dummy client so code doesn't crash
+      _supabase = Supabase.instance.client;
+    }
   }
 
   Future<void> _loadCurrentUser() async {

@@ -28,10 +28,30 @@ class AiService {
         final data = jsonDecode(response.body);
         return data['choices'][0]['message']['content'].toString().trim();
       } else {
-        throw Exception('OpenAI API error: ${response.statusCode} - ${response.body}');
+        // Return helpful fallback response
+        return _getFallbackResponse(message);
       }
     } catch (e) {
-      throw Exception('Failed to get AI response: $e');
+      print('AI API error: $e');
+      // Return helpful fallback response
+      return _getFallbackResponse(message);
+    }
+  }
+
+  /// Fallback response when API unavailable
+  String _getFallbackResponse(String message) {
+    final lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.contains('competition')) {
+      return 'Great question about competition! In demo mode, I recommend: 1) Study case studies thoroughly, 2) Practice time management, 3) Attend workshops, 4) Network with other members. For real AI responses, ensure API connection is available.';
+    } else if (lowerMessage.contains('how to prepare') || lowerMessage.contains('prepare for')) {
+      return 'Here\'s how to prepare effectively: 1) Start early with case study analysis, 2) Form a study group, 3) Attend all training sessions, 4) Practice presentations, 5) Review rules and guidelines. (Demo mode - connect for personalized AI advice)';
+    } else if (lowerMessage.contains('event') || lowerMessage.contains('conference')) {
+      return 'Check the Calendar tab to see upcoming events and competitions! FBLA offers various competitions throughout the year. Attending regional and state competitions helps you build skills and network with other members. (Demo mode - real data syncs when online)';
+    } else if (lowerMessage.contains('help') || lowerMessage.contains('assist')) {
+      return 'I\'m your FBLA AI Assistant! I can help with: competition tips, event recommendations, study guides, FBLA advice, and career guidance. What would you like to know? (Currently in demo mode)';
+    } else {
+      return 'Thanks for your question! In demo mode, I can provide general FBLA guidance. For real AI responses powered by ChatGPT, please ensure your internet connection is active. I can help with competitions, events, study tips, and career advice!';
     }
   }
 

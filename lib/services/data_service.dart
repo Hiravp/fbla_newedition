@@ -126,7 +126,7 @@ class DataService {
         category: 'Events',
         publishedDate: DateTime.now().subtract(const Duration(days: 5)),
         author: 'FBLA Admin',
-        imageUrl: 'https://via.placeholder.com/400x300?text=FBLA+Conference',
+        imageUrl: '',
         views: 234,
       ),
       News(
@@ -136,7 +136,7 @@ class DataService {
         category: 'Resources',
         publishedDate: DateTime.now().subtract(const Duration(days: 3)),
         author: 'Education Team',
-        imageUrl: 'https://via.placeholder.com/400x300?text=Case+Study',
+        imageUrl: '',
         views: 156,
       ),
       News(
@@ -146,7 +146,7 @@ class DataService {
         category: 'Member Stories',
         publishedDate: DateTime.now().subtract(const Duration(days: 1)),
         author: 'Community Team',
-        imageUrl: 'https://via.placeholder.com/400x300?text=Member+Spotlight',
+        imageUrl: '',
         views: 445,
       ),
     ];
