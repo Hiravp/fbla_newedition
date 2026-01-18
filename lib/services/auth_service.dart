@@ -143,19 +143,28 @@ class AuthService {
       return false;
     }
   }
-    }
-  }
 
   Future<void> logout() async {
-    await _supabase.auth.signOut();
+    try {
+      await _supabase.auth.signOut();
+    } catch (e) {
+      print('Logout error: $e');
+    }
     _currentUser = null;
   }
 
-  bool get isLoggedIn => _currentUser != null && _supabase.auth.currentSession != null;
+  bool get isLoggedIn => _currentUser != null;
 
   Future<void> updateProfile(fbla_user.User user) async {
     try {
-      await _supabase.from('users').update(user.toJson()).eq('id', user.id);
+      // Try to update in Supabase
+      try {
+        await _supabase.from('users').update(user.toJson()).eq('id', user.id);
+      } catch (supabaseError) {
+        print('Supabase update error: $supabaseError');
+        // Continue with local update even if Supabase fails
+      }
+
       _currentUser = user;
     } catch (e) {
       print('Update profile error: $e');
