@@ -59,7 +59,7 @@ class _MainAppState extends State<MainApp> {
   final _screens = [
     const HomeScreen(),
     const AiScreen(),
-    const ScheduleViewScreen(),
+    const CalendarScreen(),
     const NewsScreen(),
     const SocialScreen(),
     const ResourcesScreen(),

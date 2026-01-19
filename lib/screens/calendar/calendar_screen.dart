@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:table_calendar/table_calendar.dart';
-
 import '../../models/event.dart';
 import '../../services/data_service.dart';
 import '../../theme/app_theme.dart';
@@ -17,12 +15,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late final DataService _dataService;
   late Future<List<Event>> _eventsFuture;
 
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  CalendarFormat _format = CalendarFormat.month;
-
-  Map<DateTime, List<Event>> _eventsByDay = {};
-
   @override
   void initState() {
     super.initState();
@@ -32,28 +24,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Future<List<Event>> _loadEvents() async {
     final events = await _dataService.getUpcomingEvents();
-    _eventsByDay = _groupEvents(events);
-    _selectedDay = DateTime.now();
+    events.sort((a, b) => a.startDate.compareTo(b.startDate));
     return events;
-  }
-
-  Map<DateTime, List<Event>> _groupEvents(List<Event> events) {
-    final map = <DateTime, List<Event>>{};
-    for (final e in events) {
-      final day = DateTime(
-        e.startDate.year,
-        e.startDate.month,
-        e.startDate.day,
-      );
-      map.putIfAbsent(day, () => []);
-      map[day]!.add(e);
-    }
-    return map;
-  }
-
-  List<Event> _eventsForDay(DateTime day) {
-    final d = DateTime(day.year, day.month, day.day);
-    return _eventsByDay[d] ?? [];
   }
 
   Color _categoryColor(String category) {
@@ -69,14 +41,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  String _formatTime(DateTime date) {
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final ampm = date.hour >= 12 ? 'PM' : 'AM';
+    return "$hour:$minute $ampm";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(title: const Text("FBLA Calendar"), elevation: 0),
-
-      // NO FAB → read‑only
-      floatingActionButton: null,
+      appBar: AppBar(title: const Text("Schedule"), elevation: 0),
 
       body: FutureBuilder<List<Event>>(
         future: _eventsFuture,
@@ -87,126 +63,81 @@ class _CalendarScreenState extends State<CalendarScreen> {
             );
           }
 
-          return Column(
-            children: [
-              _buildCalendar(),
-              const SizedBox(height: 4),
-              Expanded(child: _buildEventSheet()),
-            ],
+          final events = snapshot.data!;
+          if (events.isEmpty) {
+            return const Center(child: Text("No upcoming events"));
+          }
+
+          // Group events by date
+          final Map<String, List<Event>> grouped = {};
+          for (final e in events) {
+            final key =
+                "${e.startDate.month}/${e.startDate.day}/${e.startDate.year}";
+            grouped.putIfAbsent(key, () => []);
+            grouped[key]!.add(e);
+          }
+
+          final dateKeys = grouped.keys.toList();
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            itemCount: dateKeys.length,
+            itemBuilder: (context, index) {
+              final date = dateKeys[index];
+              final dayEvents = grouped[date]!;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      date,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+
+                  // Events for that date
+                  ...dayEvents.map((e) => _buildEventTile(e)),
+                ],
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildCalendar() {
-    return Material(
-      elevation: 2,
-      child: TableCalendar<Event>(
-        firstDay: DateTime.utc(2020, 1, 1),
-        lastDay: DateTime.utc(2035, 12, 31),
-        focusedDay: _focusedDay,
-        selectedDayPredicate: (day) =>
-            _selectedDay != null &&
-            day.year == _selectedDay!.year &&
-            day.month == _selectedDay!.month &&
-            day.day == _selectedDay!.day,
-        calendarFormat: _format,
-        eventLoader: _eventsForDay,
-        startingDayOfWeek: StartingDayOfWeek.monday,
-
-        headerStyle: const HeaderStyle(
-          titleCentered: true,
-          formatButtonVisible: false, // prevents user from toggling formats
-          titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-
-        calendarStyle: CalendarStyle(
-          todayDecoration: BoxDecoration(
-            color: AppTheme.primaryBlue.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          selectedDecoration: const BoxDecoration(
-            color: AppTheme.primaryBlue,
-            shape: BoxShape.circle,
-          ),
-          markerDecoration: const BoxDecoration(
-            color: AppTheme.primaryBlue,
-            shape: BoxShape.circle,
-          ),
-          markersAlignment: Alignment.bottomCenter,
-          markersMaxCount: 3,
-        ),
-
-        onDaySelected: (selected, focused) {
-          setState(() {
-            _selectedDay = selected;
-            _focusedDay = focused;
-          });
-        },
-
-        onPageChanged: (focused) {
-          _focusedDay = focused;
-        },
-      ),
-    );
-  }
-
-  Widget _buildEventSheet() {
-    final events = _selectedDay != null ? _eventsForDay(_selectedDay!) : [];
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-
-      child: events.isEmpty
-          ? Center(
-              child: Text(
-                "No events on this day",
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-              ),
-            )
-          : ListView.separated(
-              itemCount: events.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final e = events[i];
-                return _buildEventTile(e);
-              },
-            ),
-    );
-  }
-
   Widget _buildEventTile(Event e) {
+    final color = _categoryColor(e.category);
+
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _categoryColor(e.category).withOpacity(0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _categoryColor(e.category).withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [
+          // Timeline Dot
           Container(
-            width: 10,
-            height: 60,
-            decoration: BoxDecoration(
-              color: _categoryColor(e.category),
-              borderRadius: BorderRadius.circular(4),
-            ),
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
+
+          // Event Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +149,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   e.description,
                   maxLines: 2,
@@ -231,8 +162,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     const Icon(Icons.access_time, size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      "${e.startDate.month}/${e.startDate.day} "
-                      "${e.startDate.hour}:${e.startDate.minute.toString().padLeft(2, '0')}",
+                      _formatTime(e.startDate),
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
