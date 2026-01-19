@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart';
 import '../../models/event.dart';
 import '../../services/data_service.dart';
 import '../../theme/app_theme.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({Key? key}) : super(key: key);
+  const CalendarScreen({super.key});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -16,7 +15,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late final DataService _dataService;
   late Future<List<Event>> _eventsFuture;
   String _selectedCategory = 'All';
-  final List<String> _categories = ['All', 'Meeting', 'Workshop', 'Competition', 'Other'];
+  final List<String> _categories = [
+    'All',
+    'Meeting',
+    'Workshop',
+    'Competition',
+    'Other',
+  ];
 
   @override
   void initState() {
@@ -33,7 +38,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (_selectedCategory == 'All') {
       return events;
     }
-    return events.where((event) => event.category == _selectedCategory).toList();
+    return events
+        .where((event) => event.category == _selectedCategory)
+        .toList();
   }
 
   String _formatDate(DateTime date) {
@@ -43,10 +50,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Calendar'), elevation: 0),
       body: Column(
         children: [
           // Category Filter
@@ -128,9 +132,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'No events found',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppTheme.textLight,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: AppTheme.textLight),
                         ),
                       ],
                     ),
@@ -156,13 +159,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 Expanded(
                                   child: Text(
                                     event.title,
-                                    style: Theme.of(context).textTheme.titleLarge,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                                    color: AppTheme.primaryBlue.withOpacity(
+                                      0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -197,7 +207,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 Expanded(
                                   child: Text(
                                     _formatDate(event.startDate),
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 ),
                               ],
@@ -214,7 +226,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 Expanded(
                                   child: Text(
                                     event.location,
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 ),
                               ],
@@ -227,7 +241,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Registered for ${event.title}'),
+                                      content: Text(
+                                        'Registered for ${event.title}',
+                                      ),
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
