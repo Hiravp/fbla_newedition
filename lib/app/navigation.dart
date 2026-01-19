@@ -13,7 +13,7 @@ class AppNavigation {
   static final routes = <String, WidgetBuilder>{
     '/': (_) => const HomeScreen(),
     '/profile': (_) => const ProfileScreen(),
-    '/calendar': (_) => const CalendarScreen(),
+    '/calendar': (_) => const ScheduleViewScreen(),
     '/resources': (_) => const ResourcesScreen(),
     '/news': (_) => const NewsScreen(),
     '/social': (_) => const SocialScreen(),

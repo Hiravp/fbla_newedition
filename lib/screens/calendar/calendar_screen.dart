@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:table_calendar/table_calendar.dart';
+
 import '../../models/event.dart';
 import '../../services/data_service.dart';
 import '../../theme/app_theme.dart';
@@ -14,251 +16,228 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   late final DataService _dataService;
   late Future<List<Event>> _eventsFuture;
-  String _selectedCategory = 'All';
-  final List<String> _categories = [
-    'All',
-    'Meeting',
-    'Workshop',
-    'Competition',
-    'Other',
-  ];
+
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  CalendarFormat _format = CalendarFormat.month;
+
+  Map<DateTime, List<Event>> _eventsByDay = {};
 
   @override
   void initState() {
     super.initState();
     _dataService = DataService(Supabase.instance.client);
-    _loadEvents();
+    _eventsFuture = _loadEvents();
   }
 
-  void _loadEvents() {
-    _eventsFuture = _dataService.getUpcomingEvents();
+  Future<List<Event>> _loadEvents() async {
+    final events = await _dataService.getUpcomingEvents();
+    _eventsByDay = _groupEvents(events);
+    _selectedDay = DateTime.now();
+    return events;
   }
 
-  List<Event> _filterEventsByCategory(List<Event> events) {
-    if (_selectedCategory == 'All') {
-      return events;
+  Map<DateTime, List<Event>> _groupEvents(List<Event> events) {
+    final map = <DateTime, List<Event>>{};
+    for (final e in events) {
+      final day = DateTime(
+        e.startDate.year,
+        e.startDate.month,
+        e.startDate.day,
+      );
+      map.putIfAbsent(day, () => []);
+      map[day]!.add(e);
     }
-    return events
-        .where((event) => event.category == _selectedCategory)
-        .toList();
+    return map;
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  List<Event> _eventsForDay(DateTime day) {
+    final d = DateTime(day.year, day.month, day.day);
+    return _eventsByDay[d] ?? [];
+  }
+
+  Color _categoryColor(String category) {
+    switch (category) {
+      case 'Meeting':
+        return Colors.blue;
+      case 'Workshop':
+        return Colors.orange;
+      case 'Competition':
+        return Colors.green;
+      default:
+        return Colors.purple;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar'), elevation: 0),
-      body: Column(
-        children: [
-          // Category Filter
-          Container(
-            color: AppTheme.lightGrey,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _categories.map((category) {
-                  final isSelected = category == _selectedCategory;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      },
-                      backgroundColor: Colors.white,
-                      selectedColor: AppTheme.primaryBlue,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textDark,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(title: const Text("FBLA Calendar"), elevation: 0),
+
+      // NO FAB → read‑only
+      floatingActionButton: null,
+
+      body: FutureBuilder<List<Event>>(
+        future: _eventsFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+            );
+          }
+
+          return Column(
+            children: [
+              _buildCalendar(),
+              const SizedBox(height: 4),
+              Expanded(child: _buildEventSheet()),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCalendar() {
+    return Material(
+      elevation: 2,
+      child: TableCalendar<Event>(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2035, 12, 31),
+        focusedDay: _focusedDay,
+        selectedDayPredicate: (day) =>
+            _selectedDay != null &&
+            day.year == _selectedDay!.year &&
+            day.month == _selectedDay!.month &&
+            day.day == _selectedDay!.day,
+        calendarFormat: _format,
+        eventLoader: _eventsForDay,
+        startingDayOfWeek: StartingDayOfWeek.monday,
+
+        headerStyle: const HeaderStyle(
+          titleCentered: true,
+          formatButtonVisible: false, // prevents user from toggling formats
+          titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        ),
+
+        calendarStyle: CalendarStyle(
+          todayDecoration: BoxDecoration(
+            color: AppTheme.primaryBlue.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          selectedDecoration: const BoxDecoration(
+            color: AppTheme.primaryBlue,
+            shape: BoxShape.circle,
+          ),
+          markerDecoration: const BoxDecoration(
+            color: AppTheme.primaryBlue,
+            shape: BoxShape.circle,
+          ),
+          markersAlignment: Alignment.bottomCenter,
+          markersMaxCount: 3,
+        ),
+
+        onDaySelected: (selected, focused) {
+          setState(() {
+            _selectedDay = selected;
+            _focusedDay = focused;
+          });
+        },
+
+        onPageChanged: (focused) {
+          _focusedDay = focused;
+        },
+      ),
+    );
+  }
+
+  Widget _buildEventSheet() {
+    final events = _selectedDay != null ? _eventsForDay(_selectedDay!) : [];
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+
+      child: events.isEmpty
+          ? Center(
+              child: Text(
+                "No events on this day",
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
               ),
+            )
+          : ListView.separated(
+              itemCount: events.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final e = events[i];
+                return _buildEventTile(e);
+              },
+            ),
+    );
+  }
+
+  Widget _buildEventTile(Event e) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _categoryColor(e.category).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _categoryColor(e.category).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 60,
+            decoration: BoxDecoration(
+              color: _categoryColor(e.category),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
-          // Events List
+          const SizedBox(width: 12),
           Expanded(
-            child: FutureBuilder<List<Event>>(
-              future: _eventsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryBlue,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  e.title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  e.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${e.startDate.month}/${e.startDate.day} "
+                      "${e.startDate.hour}:${e.startDate.minute.toString().padLeft(2, '0')}",
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: AppTheme.errorRed,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed to load events',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final events = _filterEventsByCategory(snapshot.data ?? []);
-
-                if (events.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.event_busy,
-                          size: 48,
-                          color: AppTheme.textLight,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No events found',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: AppTheme.textLight),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    final event = events[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title and Category Badge
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    event.title,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryBlue.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    event.category,
-                                    style: const TextStyle(
-                                      color: AppTheme.primaryBlue,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Description
-                            Text(
-                              event.description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 16),
-                            // Date and Location
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: AppTheme.textLight,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _formatDate(event.startDate),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: AppTheme.textLight,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    event.location,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Action Button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Registered for ${event.title}',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.check_circle_outline),
-                                label: const Text('Register'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                  ],
+                ),
+              ],
             ),
           ),
         ],

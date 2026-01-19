@@ -56,14 +56,14 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
 
-  final _screens = const [
-    HomeScreen(),
-    AiScreen(),
-    CalendarScreen(),
-    NewsScreen(),
-    SocialScreen(),
-    ResourcesScreen(),
-    ProfileScreen(),
+  final _screens = [
+    const HomeScreen(),
+    const AiScreen(),
+    const ScheduleViewScreen(),
+    const NewsScreen(),
+    const SocialScreen(),
+    const ResourcesScreen(),
+    const ProfileScreen(),
   ];
 
   @override
