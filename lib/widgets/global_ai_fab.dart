@@ -11,7 +11,6 @@ class GlobalAiFab extends StatelessWidget {
       right: 16,
       child: FloatingActionButton(
         heroTag: 'global-ai',
-        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.smart_toy),
         onPressed: () {
           Navigator.of(context).push(

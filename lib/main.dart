@@ -10,6 +10,7 @@ import 'screens/news/news_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/ai/ai_screen.dart';
 import 'screens/social/social_screen.dart';
+import 'widgets/global_ai_fab.dart';
 
 // Global AuthService
 late AuthService _authService;
@@ -74,8 +75,8 @@ class _MainAppState extends State<MainApp> {
     return Scaffold(
       body: Stack(
         children: [
-          _screens[_selectedIndex],               // Current screen
-          const _GlobalAiFab(),                   // AI floating button
+          _screens[_selectedIndex], // Current screen
+          const GlobalAiFab(),      // AI floating button
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -91,31 +92,6 @@ class _MainAppState extends State<MainApp> {
           NavigationDestination(icon: Icon(Icons.library_books), label: "Resources"),
           NavigationDestination(icon: Icon(Icons.person), label: "Profile"),
         ],
-      ),
-    );
-  }
-}
-
-// --------------------
-// Global AI Floating Button
-// --------------------
-class _GlobalAiFab extends StatelessWidget {
-  const _GlobalAiFab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 24,
-      right: 16,
-      child: FloatingActionButton(
-        heroTag: 'global-ai',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.smart_toy),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AiScreen()),
-          );
-        },
       ),
     );
   }
