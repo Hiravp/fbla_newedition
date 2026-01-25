@@ -14,251 +14,160 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   late final DataService _dataService;
   late Future<List<Event>> _eventsFuture;
-  String _selectedCategory = 'All';
-  final List<String> _categories = [
-    'All',
-    'Meeting',
-    'Workshop',
-    'Competition',
-    'Other',
-  ];
 
   @override
   void initState() {
     super.initState();
     _dataService = DataService(Supabase.instance.client);
-    _loadEvents();
+    _eventsFuture = _loadEvents();
   }
 
-  void _loadEvents() {
-    _eventsFuture = _dataService.getUpcomingEvents();
+  Future<List<Event>> _loadEvents() async {
+    final events = await _dataService.getUpcomingEvents();
+    events.sort((a, b) => a.startDate.compareTo(b.startDate));
+    return events;
   }
 
-  List<Event> _filterEventsByCategory(List<Event> events) {
-    if (_selectedCategory == 'All') {
-      return events;
+  Color _categoryColor(String category) {
+    switch (category) {
+      case 'Meeting':
+        return Colors.blue;
+      case 'Workshop':
+        return Colors.orange;
+      case 'Competition':
+        return Colors.green;
+      default:
+        return Colors.purple;
     }
-    return events
-        .where((event) => event.category == _selectedCategory)
-        .toList();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  String _formatTime(DateTime date) {
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final ampm = date.hour >= 12 ? 'PM' : 'AM';
+    return "$hour:$minute $ampm";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar'), elevation: 0),
-      body: Column(
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(title: const Text("Schedule"), elevation: 0),
+
+      body: FutureBuilder<List<Event>>(
+        future: _eventsFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+            );
+          }
+
+          final events = snapshot.data!;
+          if (events.isEmpty) {
+            return const Center(child: Text("No upcoming events"));
+          }
+
+          // Group events by date
+          final Map<String, List<Event>> grouped = {};
+          for (final e in events) {
+            final key =
+                "${e.startDate.month}/${e.startDate.day}/${e.startDate.year}";
+            grouped.putIfAbsent(key, () => []);
+            grouped[key]!.add(e);
+          }
+
+          final dateKeys = grouped.keys.toList();
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            itemCount: dateKeys.length,
+            itemBuilder: (context, index) {
+              final date = dateKeys[index];
+              final dayEvents = grouped[date]!;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      date,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+
+                  // Events for that date
+                  ...dayEvents.map((e) => _buildEventTile(e)),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEventTile(Event e) {
+    final color = _categoryColor(e.category);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
         children: [
-          // Category Filter
+          // Timeline Dot
           Container(
-            color: AppTheme.lightGrey,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _categories.map((category) {
-                  final isSelected = category == _selectedCategory;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      },
-                      backgroundColor: Colors.white,
-                      selectedColor: AppTheme.primaryBlue,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textDark,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          // Events List
+          const SizedBox(width: 16),
+
+          // Event Info
           Expanded(
-            child: FutureBuilder<List<Event>>(
-              future: _eventsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryBlue,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  e.title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  e.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatTime(e.startDate),
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: AppTheme.errorRed,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed to load events',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final events = _filterEventsByCategory(snapshot.data ?? []);
-
-                if (events.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.event_busy,
-                          size: 48,
-                          color: AppTheme.textLight,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No events found',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: AppTheme.textLight),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    final event = events[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title and Category Badge
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    event.title,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryBlue.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    event.category,
-                                    style: const TextStyle(
-                                      color: AppTheme.primaryBlue,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Description
-                            Text(
-                              event.description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 16),
-                            // Date and Location
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: AppTheme.textLight,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _formatDate(event.startDate),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: AppTheme.textLight,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    event.location,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Action Button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Registered for ${event.title}',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.check_circle_outline),
-                                label: const Text('Register'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                  ],
+                ),
+              ],
             ),
           ),
         ],
